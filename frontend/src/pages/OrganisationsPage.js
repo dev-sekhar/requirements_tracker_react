@@ -1,33 +1,81 @@
-import React, { useState, useEffect } from "react";
-import { Container } from "@mui/material";
-import { useLocation, useNavigate } from "react-router-dom";
-import api from "../utils/axios";
-import Table from "../components/Table";
-import CustomButton from "../components/Button";
-import PageHeader from "../components/PageHeader";
-import SearchField from "../components/SearchField";
-import styles from "./styles/OrganisationsPage.module.css";
+import React, { useState, useEffect } from 'react';
+import { 
+  Container, 
+  Chip,
+  IconButton
+} from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import { useNavigate, useLocation } from 'react-router-dom';
+import api from '../utils/axios';
+import PageHeader from '../components/PageHeader';
+import Table from '../components/Table';
+import styles from './styles/OrganisationsPage.module.css';
 
 const OrganisationsPage = () => {
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
   const tenantId = location.state?.tenantId || 1;
-  const currentUser = "abc";
+  
   const [organisations, setOrganisations] = useState([]);
-  const [tenantName, setTenantName] = useState("");
-  const [error, setError] = useState(null);
+  const [tenantName, setTenantName] = useState('');
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [error, setError] = useState(null);
+
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'active':
+        return 'success';
+      case 'inactive':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  // Define table columns
+  const columns = [
+    { 
+      field: 'name', 
+      headerName: 'Name' 
+    },
+    { 
+      field: 'organizationOwner', 
+      headerName: 'Owner' 
+    },
+    { 
+      field: 'status', 
+      headerName: 'Status',
+      valueGetter: (row) => (
+        <Chip 
+          label={row.status || 'Active'} 
+          color={getStatusColor(row.status)}
+          size="small"
+        />
+      )
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      valueGetter: (row) => (
+        <IconButton 
+          onClick={() => handleEditClick(row.id)}
+          size="small"
+        >
+          <EditIcon />
+        </IconButton>
+      )
+    }
+  ];
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Fetch tenant details first
+        // Fetch tenant details
         const tenantResponse = await api.get(`/api/tenants/${tenantId}`);
         setTenantName(tenantResponse.data.name);
 
-        // Then fetch organisations
+        // Fetch organisations
         const orgResponse = await api.get('/api/organisations', {
           params: { tenantId }
         });
@@ -44,76 +92,36 @@ const OrganisationsPage = () => {
     fetchData();
   }, [tenantId]);
 
-  const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
+  const handleCreateClick = () => {
+    navigate('/organisations/create', { state: { tenantId } });
   };
 
-  // Format date for display
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString();
+  const handleEditClick = (organisationId) => {
+    navigate(`/organisations/edit/${organisationId}`, { 
+      state: { tenantId } 
+    });
   };
-
-  const columns = [
-    { field: 'id', headerName: 'ID' },
-    { field: 'name', headerName: 'Name' },
-    { field: 'organizationOwner', headerName: 'Owner' },
-    { 
-      field: 'createdAt', 
-      headerName: 'Created At',
-      valueGetter: (row) => formatDate(row.createdAt)
-    },
-    { 
-      field: 'updatedAt', 
-      headerName: 'Updated At',
-      valueGetter: (row) => formatDate(row.updatedAt)
-    }
-  ];
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
 
   return (
     <Container className={styles.container}>
       <PageHeader 
-        title={tenantName ? `Organisations - ${tenantName}` : 'Organisations'}
+        title={`Organisations - ${tenantName}`}
         buttonText="Create New Organisation"
-        onButtonClick={() => navigate('/organisations/create', { 
-          state: { 
-            tenantId,
-            currentUser 
-          } 
-        })}
-      >
-        <SearchField
-          value={searchTerm}
-          onChange={handleSearch}
-          placeholder="Search organisations..."
-          className={styles.searchField}
-        />
-      </PageHeader>
+        onButtonClick={handleCreateClick}
+      />
       
-      {organisations.length === 0 ? (
-        <div className={styles.emptyState}>
-          <p>No organisations found for {tenantName}</p>
-          <CustomButton 
-            variant="primary"
-            size="medium"
-            onClick={() => navigate('/organisations/create', { 
-              state: { 
-                tenantId,
-                currentUser 
-              } 
-            })}
-          >
-            Create New Organisation
-          </CustomButton>
-        </div>
-      ) : (
-        <Table 
-          data={organisations} 
-          columns={columns} 
-        />
-      )}
+      <div className={styles.tableWrapper}>
+        {error ? (
+          <div className={styles.error}>{error}</div>
+        ) : loading ? (
+          <div className={styles.loading}>Loading...</div>
+        ) : (
+          <Table 
+            data={organisations}
+            columns={columns}
+          />
+        )}
+      </div>
     </Container>
   );
 };
