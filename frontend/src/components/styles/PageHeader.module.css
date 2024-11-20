@@ -1,0 +1,25 @@
+.pageHeader {
+  margin-bottom: 24px;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.title {
+  margin: 0;
+  flex-grow: 1;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.headerButton {
+  white-space: nowrap;
+} 
