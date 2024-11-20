@@ -1,11 +1,13 @@
 //organisationopages.js
 import React, { useState, useEffect } from "react";
-import { Container, Chip, IconButton } from "@mui/material";
+import { Container, Chip, IconButton, Box } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../utils/axios";
 import PageHeader from "../components/PageHeader";
 import Table from "../components/Table";
+import Button from "../components/Button";
 import styles from "./styles/OrganisationsPage.module.css";
 
 const OrganisationsPage = () => {
@@ -54,9 +56,14 @@ const OrganisationsPage = () => {
       field: "actions",
       headerName: "Actions",
       valueGetter: (row) => (
-        <IconButton onClick={() => handleEditClick(row.id)} size="small">
-          <EditIcon />
-        </IconButton>
+        <>
+          <IconButton onClick={() => handleEditClick(row.id)} size="small">
+            <EditIcon />
+          </IconButton>
+          <IconButton onClick={() => handleDeleteClick(row.id)} size="small">
+            <DeleteIcon />
+          </IconButton>
+        </>
       ),
     },
   ];
@@ -96,6 +103,19 @@ const OrganisationsPage = () => {
     });
   };
 
+  const handleDeleteClick = async (organisationId) => {
+    try {
+      await api.delete(`/api/organisations/${organisationId}`);
+      setOrganisations((prev) => prev.filter(org => org.id !== organisationId));
+    } catch (error) {
+      console.error('Error deleting organisation:', error);
+    }
+  };
+
+  const handleViewDeletedClick = () => {
+    navigate('/organisations/deleted', { state: { tenantId, tenantName } });
+  };
+
   return (
     <Container className={styles.container}>
       <PageHeader
@@ -110,7 +130,18 @@ const OrganisationsPage = () => {
         ) : loading ? (
           <div className={styles.loading}>Loading...</div>
         ) : (
-          <Table data={organisations} columns={columns} />
+          <>
+            <Table data={organisations} columns={columns} />
+            
+            <Box className={styles.buttonContainer}>
+              <Button 
+                variant="primary"
+                onClick={handleViewDeletedClick}
+              >
+                View Deleted Organisations
+              </Button>
+            </Box>
+          </>
         )}
       </div>
     </Container>

@@ -3,7 +3,7 @@ import { Container, Paper, TextField, Box } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../utils/axios";
 import PageHeader from "../components/PageHeader";
-import CustomButton from "../components/Button";
+import Button from "../components/Button";
 import styles from "./styles/CreateOrganisationPage.module.css";
 
 const CreateOrganisationPage = () => {
@@ -58,62 +58,45 @@ const CreateOrganisationPage = () => {
   };
 
   return (
-    <Container className={styles.container}>
-      <PageHeader 
-        title="Create New Organisation"
-        buttonText="Back to Organisations"
-        buttonVariant="secondary"
-        onButtonClick={() => navigate('/organisations', { state: { tenantId } })}
-      />
-      
-      <Paper className={styles.formContainer}>
-        <form onSubmit={handleSubmit}>
-          <Box className={styles.formField}>
-            <TextField
-              fullWidth
-              label="Organisation Name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              error={Boolean(error)}
-            />
-          </Box>
-
-          <Box className={styles.formField}>
-            <TextField
-              fullWidth
-              label="Organisation Owner"
-              name="organizationOwner"
-              value={formData.organizationOwner}
-              onChange={handleChange}
-              required
-              error={Boolean(error)}
-            />
-          </Box>
-
-          {error && (
-            <Box className={styles.error}>
-              {error}
-            </Box>
-          )}
-
-          <Box className={styles.actions}>
-            <CustomButton
-              type="button"
-              variant="secondary"
+    <Container className={styles.pageContainer}>
+      <Paper className={styles.formWrapper} elevation={0}>
+        <PageHeader 
+          title="Create New Organisation"
+        />
+        
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <TextField
+            label="Organisation Name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+            fullWidth
+          />
+          
+          <TextField
+            label="Organisation Owner"
+            name="organizationOwner"
+            value={formData.organizationOwner}
+            onChange={handleChange}
+            required
+            fullWidth
+          />
+          
+          <Box className={styles.buttonContainer}>
+            <Button 
+              variant="primary"
               onClick={() => navigate('/organisations', { state: { tenantId } })}
-              disabled={loading}
+              type="button"
             >
               Cancel
-            </CustomButton>
-            <CustomButton
-              type="submit"
+            </Button>
+            <Button 
               variant="primary"
-              disabled={loading}
+              type="submit"
             >
               Create Organisation
-            </CustomButton>
+            </Button>
           </Box>
         </form>
       </Paper>
