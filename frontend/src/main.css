@@ -1,0 +1,10 @@
+   /* base.css */
+   body {
+    font-family: 'Arimo', sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+    font-size: 15px;
+  }
+
+  /* Add any other global styles here */
