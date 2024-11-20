@@ -4,6 +4,7 @@ import HomePage from "./pages/HomePage";
 import OrganisationsPage from "./pages/OrganisationsPage";
 import CreateOrganisationPage from "./pages/CreateOrganisationPage";
 import EditOrganisationPage from './pages/EditOrganisationPage';
+import DeletedOrganisationsPage from './pages/DeletedOrganisationsPage';
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import styles from "./App.css";
@@ -22,6 +23,7 @@ function App() {
               element={<CreateOrganisationPage />}
             />
             <Route path="/organisations/edit/:id" element={<EditOrganisationPage />} />
+            <Route path="/organisations/deleted" element={<DeletedOrganisationsPage />} />
           </Routes>
         </main>
         <Footer />

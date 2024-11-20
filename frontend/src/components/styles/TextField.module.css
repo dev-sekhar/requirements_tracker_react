@@ -1,0 +1,38 @@
+.textField {
+  margin-bottom: 16px !important;
+}
+
+.textField :global(.MuiOutlinedInput-root) {
+  border-radius: 4px;
+}
+
+.textField :global(.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline) {
+  border-color: #1976d2;
+}
+
+.textField :global(.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline) {
+  border-color: #1976d2;
+  border-width: 2px;
+}
+
+.label {
+  color: rgba(0, 0, 0, 0.6) !important;
+}
+
+.label.Mui-focused {
+  color: #1976d2 !important;
+}
+
+.input {
+  padding: 14px !important;
+  background-color: #fff;
+}
+
+/* Error states */
+.textField.error :global(.MuiOutlinedInput-root.Mui-error .MuiOutlinedInput-notchedOutline) {
+  border-color: #d32f2f;
+}
+
+.textField.error .label.Mui-error {
+  color: #d32f2f !important;
+} 

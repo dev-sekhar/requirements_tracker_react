@@ -1,23 +1,20 @@
-import React, { useState } from "react";
-import { Container, Paper, TextField, Box } from "@mui/material";
-import { useNavigate, useLocation } from "react-router-dom";
-import api from "../utils/axios";
-import PageHeader from "../components/PageHeader";
-import Button from "../components/Button";
-import styles from "./styles/CreateOrganisationPage.module.css";
+import React, { useState } from 'react';
+import { Container } from '@mui/material';
+import { useNavigate, useLocation } from 'react-router-dom';
+import api from '../utils/axios';
+import PageHeader from '../components/PageHeader';
+import Form from '../components/Form';
+import styles from './styles/CreateOrganisationPage.module.css';
 
 const CreateOrganisationPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const tenantId = location.state?.tenantId || 1;
-  const currentUser = location.state?.currentUser || "abc";
-  
+  const tenantId = location.state?.tenantId;
+
   const [formData, setFormData] = useState({
     name: '',
-    organizationOwner: '',
+    organizationOwner: ''
   });
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -29,77 +26,53 @@ const CreateOrganisationPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const submitData = {
-      name: formData.name,
-      organizationOwner: formData.organizationOwner,
-      tenantId: parseInt(tenantId),
-      createdBy: currentUser
-    };
-
     try {
-      console.log('Submitting form data:', submitData);
+      console.log('Submitting form data:', {
+        ...formData,
+        tenantId,
+        createdBy: 'system'
+      });
 
-      const response = await api.post('/api/organisations', submitData);
+      const response = await api.post('/api/organisations', {
+        ...formData,
+        tenantId,
+        createdBy: 'system'
+      });
 
-      console.log('Creation successful:', response.data);
+      console.log('Create response:', response.data);
       navigate('/organisations', { state: { tenantId } });
     } catch (error) {
       console.error('Error creating organisation:', error);
-      setError(
-        error.response?.data?.error || 
-        'Failed to create organisation. Please try again.'
-      );
-    } finally {
-      setLoading(false);
     }
   };
 
+  const formFields = [
+    {
+      name: 'name',
+      label: 'Organisation Name',
+      value: formData.name,
+      onChange: handleChange,
+      required: true
+    },
+    {
+      name: 'organizationOwner',
+      label: 'Organisation Owner',
+      value: formData.organizationOwner,
+      onChange: handleChange,
+      required: true
+    }
+  ];
+
   return (
     <Container className={styles.pageContainer}>
-      <Paper className={styles.formWrapper} elevation={0}>
-        <PageHeader 
-          title="Create New Organisation"
-        />
-        
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <TextField
-            label="Organisation Name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            fullWidth
-          />
-          
-          <TextField
-            label="Organisation Owner"
-            name="organizationOwner"
-            value={formData.organizationOwner}
-            onChange={handleChange}
-            required
-            fullWidth
-          />
-          
-          <Box className={styles.buttonContainer}>
-            <Button 
-              variant="primary"
-              onClick={() => navigate('/organisations', { state: { tenantId } })}
-              type="button"
-            >
-              Cancel
-            </Button>
-            <Button 
-              variant="primary"
-              type="submit"
-            >
-              Create Organisation
-            </Button>
-          </Box>
-        </form>
-      </Paper>
+      <PageHeader title="Create New Organisation" />
+      <Form
+        onSubmit={handleSubmit}
+        onCancel={() => navigate('/organisations', { state: { tenantId } })}
+        fields={formFields}
+        submitButtonText="Create Organisation"
+        cancelButtonText="Cancel"
+      />
     </Container>
   );
 };

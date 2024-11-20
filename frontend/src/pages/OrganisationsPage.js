@@ -113,15 +113,20 @@ const OrganisationsPage = () => {
   };
 
   const handleViewDeletedClick = () => {
-    navigate('/organisations/deleted', { state: { tenantId, tenantName } });
+    console.log('Navigating to deleted organisations with tenantId:', tenantId);
+    console.log('Tenant Name:', tenantName);
+    navigate('/organisations/deleted', { 
+      state: { 
+        tenantId, 
+        tenantName 
+      } 
+    });
   };
 
   return (
     <Container className={styles.container}>
       <PageHeader
         title={`Organisations - ${tenantName}`}
-        buttonText="Create New Organisation"
-        onButtonClick={handleCreateClick}
       />
 
       <div className={styles.tableWrapper}>
@@ -139,6 +144,12 @@ const OrganisationsPage = () => {
                 onClick={handleViewDeletedClick}
               >
                 View Deleted Organisations
+              </Button>
+              <Button 
+                variant="primary"
+                onClick={handleCreateClick}
+              >
+                Create New Organisation
               </Button>
             </Box>
           </>
