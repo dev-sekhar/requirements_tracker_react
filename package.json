@@ -9,6 +9,6 @@
     "start:backend": "cd backend && node server.js"
   },
   "devDependencies": {
-    "concurrently": "^8.0.1"
+    "concurrently": "^9.1.0"
   }
 }

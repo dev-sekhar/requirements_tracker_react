@@ -159,4 +159,74 @@ router.post('/organisations', async (req, res) => {
   }
 });
 
+// Add PUT endpoint for editing
+router.put('/organisations/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, organizationOwner, status, modifiedBy } = req.body;
+
+    const updatedOrganisation = await prisma.organization.update({
+      where: { id: parseInt(id) },
+      data: {
+        name,
+        organizationOwner,
+        status,
+        modifiedBy
+      },
+    });
+
+    res.json(updatedOrganisation);
+  } catch (error) {
+    console.error('Error updating organisation:', error);
+    res.status(500).json({ error: 'Failed to update organisation' });
+  }
+});
+
+// Get single organisation by ID
+router.get('/organisations/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const organisation = await prisma.organization.findUnique({
+      where: {
+        id: parseInt(id)
+      }
+    });
+
+    if (!organisation) {
+      return res.status(404).json({ error: 'Organisation not found' });
+    }
+
+    res.json(organisation);
+  } catch (error) {
+    console.error('Error fetching organisation:', error);
+    res.status(500).json({ error: 'Failed to fetch organisation' });
+  }
+});
+
+// Update organisation
+router.put('/organisations/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, organizationOwner, status, modifiedBy } = req.body;
+
+    const updatedOrganisation = await prisma.organization.update({
+      where: {
+        id: parseInt(id)
+      },
+      data: {
+        name,
+        organizationOwner,
+        status,
+        modifiedBy
+      }
+    });
+
+    res.json(updatedOrganisation);
+  } catch (error) {
+    console.error('Error updating organisation:', error);
+    res.status(500).json({ error: 'Failed to update organisation' });
+  }
+});
+
 module.exports = router;
