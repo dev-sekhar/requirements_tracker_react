@@ -1,4 +1,4 @@
-# FunChain Project
+# FunChain Project for raising funds
 
 **1. Custom Blockchain Platform Development**
 
