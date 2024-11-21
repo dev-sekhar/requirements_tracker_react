@@ -1,18 +1,43 @@
 import React from "react";
 import Header from "./Header";
 import Footer from "./Footer";
-import styles from "./styles/Layout.module.css";
+import { Box, styled } from '@mui/material';
 
-function Layout({ children }) {
+const LayoutRoot = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  minHeight: '100vh',
+  maxWidth: '100%',
+  overflowX: 'hidden',
+}));
+
+const HeaderSection = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  backgroundColor: theme.palette.background.paper,
+  borderBottom: `1px solid ${theme.palette.divider}`,
+  maxWidth: '100%',
+}));
+
+const MainContent = styled(Box)(({ theme }) => ({
+  flex: 1,
+  padding: theme.spacing(2.5),
+  backgroundColor: theme.palette.background.default,
+  maxWidth: '100%',
+}));
+
+const Layout = ({ children }) => {
   return (
-    <div className={styles.container}>
-      <div className={styles.headerSection}>
+    <LayoutRoot>
+      <HeaderSection>
         <Header />
-      </div>
-      <main className={styles.main}>{children}</main>
+      </HeaderSection>
+      <MainContent>
+        {children}
+      </MainContent>
       <Footer />
-    </div>
+    </LayoutRoot>
   );
-}
+};
 
 export default Layout;

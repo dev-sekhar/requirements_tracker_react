@@ -1,20 +1,18 @@
 import React, { useState } from 'react';
-import { Container } from '@mui/material';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Container, Alert, Box } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import api from '../utils/axios';
 import PageHeader from '../components/PageHeader';
-import Form from '../components/Form';
-import styles from './styles/CreateOrganisationPage.module.css';
+import TextField from '../components/TextField';
+import Button from '../components/Button';
 
-const CreateOrganisationPage = () => {
+const CreateOrganisationPage = ({ tenant }) => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const tenantId = location.state?.tenantId;
-
   const [formData, setFormData] = useState({
     name: '',
     organizationOwner: ''
   });
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -27,52 +25,75 @@ const CreateOrganisationPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      console.log('Submitting form data:', {
+      setError(null);
+      await api.post(`/api/tenants/${tenant.id}/organisations`, {
         ...formData,
-        tenantId,
-        createdBy: 'system'
+        createdBy: 'system',
+        status: 'Active'
       });
-
-      const response = await api.post('/api/organisations', {
-        ...formData,
-        tenantId,
-        createdBy: 'system'
-      });
-
-      console.log('Create response:', response.data);
-      navigate('/organisations', { state: { tenantId } });
+      navigate('/organisations');
     } catch (error) {
       console.error('Error creating organisation:', error);
+      if (error.response?.data?.code === 'DUPLICATE_NAME') {
+        setError(`An organization named "${formData.name}" already exists for this tenant`);
+      } else {
+        setError('Failed to create organization. Please try again.');
+      }
     }
   };
 
-  const formFields = [
-    {
-      name: 'name',
-      label: 'Organisation Name',
-      value: formData.name,
-      onChange: handleChange,
-      required: true
-    },
-    {
-      name: 'organizationOwner',
-      label: 'Organisation Owner',
-      value: formData.organizationOwner,
-      onChange: handleChange,
-      required: true
-    }
-  ];
-
   return (
-    <Container className={styles.pageContainer}>
-      <PageHeader title="Create New Organisation" />
-      <Form
-        onSubmit={handleSubmit}
-        onCancel={() => navigate('/organisations', { state: { tenantId } })}
-        fields={formFields}
-        submitButtonText="Create Organisation"
-        cancelButtonText="Cancel"
-      />
+    <Container maxWidth="sm" sx={{ py: 4 }}>
+      <PageHeader title={`Create New Organisation - ${tenant?.name || ''}`} />
+      
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+      
+      <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+        <TextField
+          label="Organisation Name"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          required
+          fullWidth
+          sx={{ mb: 3 }}
+        />
+        
+        <TextField
+          label="Organisation Owner"
+          name="organizationOwner"
+          value={formData.organizationOwner}
+          onChange={handleChange}
+          required
+          fullWidth
+          sx={{ mb: 4 }}
+        />
+        
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2, 
+          justifyContent: 'flex-end',
+          mt: 2 
+        }}>
+          <Button
+            variant="outlined"
+            onClick={() => navigate('/organisations')}
+          >
+            Cancel
+          </Button>
+          
+          <Button
+            type="submit"
+            variant="contained"
+          >
+            Create Organisation
+          </Button>
+        </Box>
+      </Box>
     </Container>
   );
 };

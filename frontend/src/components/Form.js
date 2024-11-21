@@ -1,11 +1,45 @@
 import React from 'react';
-import { 
-  Paper, 
-  Box 
-} from '@mui/material';
-import Button from './Button';
+import { Box, Paper, Button, styled } from '@mui/material';
 import TextField from './TextField';
 import styles from './styles/Form.module.css';
+
+const FormWrapper = styled(Paper)(({ theme }) => ({
+  width: '100%',
+  maxWidth: 600,
+  padding: theme.spacing(4),
+  borderRadius: theme.shape.borderRadius,
+  backgroundColor: theme.palette.background.paper,
+  marginTop: theme.spacing(3),
+  [theme.breakpoints.down('sm')]: {
+    padding: theme.spacing(3, 2),
+  },
+  [theme.breakpoints.between('sm', 'md')]: {
+    maxWidth: '90%',
+  },
+  [theme.breakpoints.up('md')]: {
+    minWidth: 600,
+  },
+}));
+
+const FormContent = styled('form')(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: theme.spacing(3),
+}));
+
+const ButtonContainer = styled(Box)(({ theme }) => ({
+  marginTop: theme.spacing(4),
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: theme.spacing(3),
+  [theme.breakpoints.down('sm')]: {
+    flexDirection: 'column-reverse',
+    gap: theme.spacing(2),
+    '& > button': {
+      width: '100%',
+    },
+  },
+}));
 
 const Form = ({ 
   onSubmit, 
@@ -16,8 +50,8 @@ const Form = ({
   className = ''
 }) => {
   return (
-    <Paper className={`${styles.formWrapper} ${className}`} elevation={0}>
-      <form onSubmit={onSubmit} className={styles.form}>
+    <FormWrapper className={`${styles.formWrapper} ${className}`} elevation={0}>
+      <FormContent onSubmit={onSubmit} className={styles.form}>
         {fields.map((field) => (
           <TextField
             key={field.name}
@@ -32,7 +66,7 @@ const Form = ({
           />
         ))}
         
-        <Box className={styles.buttonContainer}>
+        <ButtonContainer>
           <Button 
             variant="primary"
             onClick={onCancel}
@@ -46,9 +80,9 @@ const Form = ({
           >
             {submitButtonText}
           </Button>
-        </Box>
-      </form>
-    </Paper>
+        </ButtonContainer>
+      </FormContent>
+    </FormWrapper>
   );
 };
 

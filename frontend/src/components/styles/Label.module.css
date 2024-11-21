@@ -1,0 +1,32 @@
+.labelContainer {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+}
+
+.label {
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.required .requiredStar {
+  color: #d32f2f;
+  margin-left: 4px;
+  font-size: 1.2em;
+  line-height: 0;
+}
+
+/* Hover effect for non-disabled labels */
+.labelContainer:not(.disabled):hover .label {
+  color: rgba(0, 0, 0, 0.87);
+}
+
+/* Tooltip styles if needed */
+.labelContainer[title] {
+  cursor: help;
+} 

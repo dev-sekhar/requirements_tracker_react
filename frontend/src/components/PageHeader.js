@@ -1,35 +1,42 @@
-import React from "react";
-import { Box, Typography } from "@mui/material";
-import CustomButton from "./Button";
-import styles from "./styles/PageHeader.module.css";
+import { Box, Typography, Button, styled } from '@mui/material';
 
-const PageHeader = ({ 
-  title, 
-  buttonText, 
-  onButtonClick,
-  children
-}) => {
+const HeaderContainer = styled(Box)(({ theme }) => ({
+  marginBottom: theme.spacing(3),
+}));
+
+const HeaderRow = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: theme.spacing(2),
+}));
+
+const HeaderActions = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(2),
+}));
+
+const PageHeader = ({ title, buttonText, onButtonClick, showButton = false }) => {
   return (
-    <Box className={styles.pageHeader}>
-      <Box className={styles.headerRow}>
-        <Typography variant="h5" component="h1" className={styles.title}>
+    <HeaderContainer>
+      <HeaderRow>
+        <Typography variant="h5" component="h1">
           {title}
         </Typography>
-        <Box className={styles.headerActions}>
-          {children}
-          {buttonText && (
-            <CustomButton
-              variant="primary"
-              size="medium"
+        {showButton && (
+          <HeaderActions>
+            <Button
+              variant="contained"
+              color="primary"
               onClick={onButtonClick}
-              className={styles.headerButton}
             >
               {buttonText}
-            </CustomButton>
-          )}
-        </Box>
-      </Box>
-    </Box>
+            </Button>
+          </HeaderActions>
+        )}
+      </HeaderRow>
+    </HeaderContainer>
   );
 };
 

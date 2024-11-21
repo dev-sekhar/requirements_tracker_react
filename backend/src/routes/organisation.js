@@ -80,43 +80,24 @@ router.get("/organisations/deleted", async (req, res) => {
  * Retrieves all active organisations for a given tenant
  */
 router.get("/organisations", async (req, res) => {
-  const { tenantId } = req.query;
-  logger.info(`Fetching organisations for tenantId: ${tenantId}`);
-
   try {
-    const parsedTenantId = parseInt(tenantId, 10);
-
-    if (isNaN(parsedTenantId)) {
-      throw new Error("Invalid tenantId");
+    const tenantId = req.headers['x-tenant-id'];
+    
+    if (!tenantId) {
+      logger.error('No tenant ID provided');
+      return res.status(400).json({ error: 'Tenant ID is required' });
     }
 
     const organisations = await prisma.organization.findMany({
       where: {
-        tenantId: parsedTenantId,
-        status: {
-          not: "Deleted",
-        },
-      },
-      include: {
-        tenant: {
-          select: {
-            name: true,
-          },
-        },
-      },
+        tenantId: parseInt(tenantId)
+      }
     });
 
-    const organisationsWithTenantName = organisations.map((org) => ({
-      ...org,
-      tenantName: org.tenant.name,
-      tenant: undefined,
-    }));
-
-    logger.info(`Found ${organisations.length} organisations`);
-    res.json(organisationsWithTenantName);
+    res.json(organisations);
   } catch (error) {
-    logger.error("Error fetching organisations:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    logger.error('Error fetching organisations:', error);
+    res.status(500).json({ error: 'Failed to fetch organisations' });
   }
 });
 
@@ -246,6 +227,13 @@ router.put("/organisations/:id", async (req, res) => {
     const { id } = req.params;
     const { name, organizationOwner, status, modifiedBy } = req.body;
 
+    if (!modifiedBy) {
+      return res.status(400).json({ 
+        error: "Modified by is required",
+        code: 'MISSING_REQUIRED_FIELD'
+      });
+    }
+
     const updatedOrganisation = await prisma.organization.update({
       where: {
         id: parseInt(id),
@@ -272,7 +260,10 @@ router.put("/organisations/:id", async (req, res) => {
       tenant: undefined,
     };
 
-    res.json(organisationWithTenantName);
+    res.json({
+      data: organisationWithTenantName,
+      message: "Organisation updated successfully"
+    });
   } catch (error) {
     logger.error("Error updating organisation:", error);
     res.status(500).json({ error: "Failed to update organisation" });
@@ -313,6 +304,268 @@ router.delete("/organisations/:id", async (req, res) => {
   } catch (error) {
     logger.error("Error deleting organisation:", error);
     res.status(500).json({ error: "Failed to delete organisation" });
+  }
+});
+
+/**
+ * GET /tenants/:tenantId/organisations
+ * Retrieves all organisations for a specific tenant
+ */
+router.get('/tenants/:tenantId/organisations', async (req, res) => {
+  try {
+    const { tenantId } = req.params;
+    
+    logger.info(`Fetching organizations for tenant ${tenantId}`);
+
+    const organisations = await prisma.organization.findMany({
+      where: {
+        tenantId: parseInt(tenantId)
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    });
+
+    logger.info(`Found ${organisations.length} organizations`);
+    res.json(organisations);
+  } catch (error) {
+    logger.error('Error fetching organizations:', error);
+    res.status(500).json({ error: 'Failed to fetch organizations' });
+  }
+});
+
+/**
+ * POST /tenants/:tenantId/organisations
+ * Creates a new organisation under a specific tenant
+ */
+router.post('/tenants/:tenantId/organisations', async (req, res) => {
+  try {
+    const { tenantId } = req.params;
+    const { name, organizationOwner, createdBy, status } = req.body;
+
+    logger.info(`Validating organisation creation for tenant ${tenantId}:`, {
+      name,
+      organizationOwner
+    });
+
+    // Check if organization with same name exists for this tenant
+    const existingOrg = await prisma.organization.findFirst({
+      where: {
+        name,
+        tenantId: parseInt(tenantId)
+      }
+    });
+
+    if (existingOrg) {
+      // This is a normal business case, not an error
+      logger.info(`Organisation "${name}" already exists for tenant ${tenantId}`);
+      return res.status(409).json({ 
+        error: `Organisation "${name}" already exists`,
+        code: 'DUPLICATE_NAME'
+      });
+    }
+
+    const newOrganisation = await prisma.organization.create({
+      data: {
+        name,
+        organizationOwner,
+        tenantId: parseInt(tenantId),
+        createdBy,
+        modifiedBy: createdBy,
+        status: status || 'Active'
+      }
+    });
+
+    logger.info(`Created organisation "${name}" with ID ${newOrganisation.id}`);
+    res.status(201).json(newOrganisation);
+  } catch (error) {
+    logger.error('Unexpected error creating organisation:', error);
+    res.status(500).json({ 
+      error: 'Failed to create organisation',
+      details: error.message 
+    });
+  }
+});
+
+/**
+ * GET /tenants/:tenantId/organisations/:id
+ * Retrieves a single organisation by ID for a specific tenant
+ */
+router.get('/tenants/:tenantId/organisations/:id', async (req, res) => {
+  try {
+    const { tenantId, id } = req.params;
+    
+    logger.info(`Fetching organisation ${id} for tenant ${tenantId}`);
+
+    const organisation = await prisma.organization.findFirst({
+      where: {
+        id: parseInt(id),
+        tenantId: parseInt(tenantId)
+      },
+      include: {
+        tenant: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!organisation) {
+      logger.info(`Organisation ${id} not found for tenant ${tenantId}`);
+      return res.status(404).json({ error: "Organisation not found" });
+    }
+
+    const organisationWithTenantName = {
+      ...organisation,
+      tenantName: organisation.tenant.name,
+      tenant: undefined,
+    };
+
+    res.json(organisationWithTenantName);
+  } catch (error) {
+    logger.error("Error fetching organisation:", error);
+    res.status(500).json({ error: "Failed to fetch organisation" });
+  }
+});
+
+/**
+ * DELETE /tenants/:tenantId/organisations/:id
+ * Marks an organisation as deleted for a specific tenant
+ */
+router.delete('/tenants/:tenantId/organisations/:id', async (req, res) => {
+  try {
+    const { tenantId, id } = req.params;
+    
+    logger.info(`Deleting organisation ${id} for tenant ${tenantId}`);
+
+    const organisation = await prisma.organization.findFirst({
+      where: {
+        id: parseInt(id),
+        tenantId: parseInt(tenantId)
+      }
+    });
+
+    if (!organisation) {
+      logger.info(`Organisation ${id} not found for tenant ${tenantId}`);
+      return res.status(404).json({ error: "Organisation not found" });
+    }
+
+    const updatedOrganisation = await prisma.organization.update({
+      where: {
+        id: parseInt(id),
+        tenantId: parseInt(tenantId)
+      },
+      data: {
+        status: "Deleted",
+        updatedAt: new Date(),
+      },
+      include: {
+        tenant: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    const organisationWithTenantName = {
+      ...updatedOrganisation,
+      tenantName: updatedOrganisation.tenant.name,
+      tenant: undefined,
+    };
+
+    logger.info(`Successfully deleted organisation ${id}`);
+    res.json(organisationWithTenantName);
+  } catch (error) {
+    logger.error("Error deleting organisation:", error);
+    res.status(500).json({ error: "Failed to delete organisation" });
+  }
+});
+
+/**
+ * PUT /tenants/:tenantId/organisations/:id
+ * Updates an existing organisation for a specific tenant
+ */
+router.put('/tenants/:tenantId/organisations/:id', async (req, res) => {
+  try {
+    const { tenantId, id } = req.params;
+    const { name, organizationOwner, modifiedBy, status } = req.body;
+    
+    logger.info(`Updating organisation ${id} for tenant ${tenantId}`);
+
+    // First check if the organisation exists
+    const existingOrg = await prisma.organization.findFirst({
+      where: {
+        id: parseInt(id),
+        tenantId: parseInt(tenantId)
+      }
+    });
+
+    if (!existingOrg) {
+      logger.info(`Organisation ${id} not found for tenant ${tenantId}`);
+      return res.status(404).json({ error: "Organisation not found" });
+    }
+
+    // Check if new name conflicts with existing organisation
+    if (name && name !== existingOrg.name) {
+      const duplicateOrg = await prisma.organization.findFirst({
+        where: {
+          name,
+          tenantId: parseInt(tenantId),
+          id: { not: parseInt(id) } // Exclude current org from check
+        }
+      });
+
+      if (duplicateOrg) {
+        logger.info(`Organisation name "${name}" already exists for tenant ${tenantId}`);
+        return res.status(409).json({ 
+          error: `Organisation "${name}" already exists`,
+          code: 'DUPLICATE_NAME'
+        });
+      }
+    }
+
+    // Update the organisation
+    const updatedOrganisation = await prisma.organization.update({
+      where: {
+        id: parseInt(id),
+        tenantId: parseInt(tenantId)
+      },
+      data: {
+        ...(name && { name }),
+        ...(organizationOwner && { organizationOwner }),
+        ...(status && { status }),
+        modifiedBy,
+        updatedAt: new Date()
+      },
+      include: {
+        tenant: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    const organisationWithTenantName = {
+      ...updatedOrganisation,
+      tenantName: updatedOrganisation.tenant.name,
+      tenant: undefined,
+    };
+
+    logger.info(`Successfully updated organisation ${id}`);
+    res.json({
+      data: organisationWithTenantName,
+      message: "Organisation updated successfully"
+    });
+  } catch (error) {
+    logger.error("Error updating organisation:", error);
+    res.status(500).json({ 
+      error: "Failed to update organisation",
+      details: error.message,
+      code: 'UPDATE_FAILED'
+    });
   }
 });
 

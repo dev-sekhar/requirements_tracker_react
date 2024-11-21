@@ -1,0 +1,24 @@
+.switchControl {
+  margin-left: 0 !important;
+}
+
+.switchControl .label {
+  margin-right: 8px;
+}
+
+/* When label placement is end */
+.switchControl[class*="MuiFormControlLabel-labelPlacementEnd"] .label {
+  margin-right: 0;
+  margin-left: 8px;
+}
+
+/* Hover effect for the switch */
+.switchControl:hover {
+  opacity: 0.9;
+}
+
+/* Disabled state */
+.switchControl.Mui-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+} 

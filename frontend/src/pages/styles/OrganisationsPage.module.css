@@ -75,3 +75,16 @@ table {
       width: 100%;
     }
   }
+
+  .filterContainer {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+    margin-top: 16px;
+  }
+
+  @media (max-width: 600px) {
+    .container {
+      padding: 16px;
+    }
+  }

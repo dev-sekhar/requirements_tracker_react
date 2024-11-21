@@ -1,161 +1,234 @@
 //organisationopages.js
 import React, { useState, useEffect } from "react";
-import { Container, Chip, IconButton, Box } from "@mui/material";
+import { Container, Chip, IconButton, Box, styled, Tooltip, Typography } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from '@mui/icons-material/Delete';
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import api from "../utils/axios";
 import PageHeader from "../components/PageHeader";
 import Table from "../components/Table";
-import Button from "../components/Button";
-import styles from "./styles/OrganisationsPage.module.css";
+import ErrorMessage from '../components/ErrorMessage';
+import ToggleSwitch from '../components/ToggleSwitch';
+import logger from "../utils/logger";
 
-const OrganisationsPage = () => {
+const PageContainer = styled(Container)(({ theme }) => ({
+  padding: theme.spacing(3),
+  [theme.breakpoints.down('sm')]: {
+    padding: theme.spacing(2),
+  },
+}));
+
+const FilterContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'flex-end',
+  marginBottom: theme.spacing(2),
+  marginTop: theme.spacing(2),
+}));
+
+const LoadingContainer = styled(Box)(({ theme }) => ({
+  textAlign: 'center',
+  padding: theme.spacing(3),
+  color: theme.palette.text.secondary,
+}));
+
+const EmptyState = styled(Box)(({ theme }) => ({
+  textAlign: 'center',
+  padding: theme.spacing(6, 3),
+  backgroundColor: theme.palette.grey[100],
+  borderRadius: theme.shape.borderRadius,
+  marginTop: theme.spacing(3),
+}));
+
+const OrganisationsPage = ({ tenant }) => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const tenantId = location.state?.tenantId || 1;
-
+  
   const [organisations, setOrganisations] = useState([]);
-  const [tenantName, setTenantName] = useState("");
+  const [filteredOrganisations, setFilteredOrganisations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showActiveOnly, setShowActiveOnly] = useState(true);
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "active":
-        return "success";
-      case "inactive":
-        return "error";
-      default:
-        return "default";
-    }
-  };
-
-  // Define table columns
   const columns = [
     {
       field: "name",
       headerName: "Name",
+      width: '30%'
     },
     {
       field: "organizationOwner",
       headerName: "Owner",
+      width: '30%'
     },
     {
       field: "status",
       headerName: "Status",
-      valueGetter: (row) => (
+      width: '20%',
+      cellRenderer: (row) => (
         <Chip
-          label={row.status || "Active"}
-          color={getStatusColor(row.status)}
+          label={row.status}
+          color={row.status === 'Deleted' ? 'error' : 'success'}
           size="small"
         />
-      ),
+      )
     },
     {
       field: "actions",
       headerName: "Actions",
-      valueGetter: (row) => (
-        <>
-          <IconButton onClick={() => handleEditClick(row.id)} size="small">
-            <EditIcon />
-          </IconButton>
-          <IconButton onClick={() => handleDeleteClick(row.id)} size="small">
-            <DeleteIcon />
-          </IconButton>
-        </>
-      ),
-    },
+      width: '20%',
+      cellRenderer: (row) => (
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 1,
+          justifyContent: 'flex-end'
+        }}>
+          <Tooltip title="Edit">
+            <span>
+              <IconButton 
+                size="small" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEdit(row.id);
+                }}
+                disabled={row.status === 'Deleted'}
+                color="primary"
+                sx={{
+                  '&.Mui-disabled': {
+                    opacity: 0.5,
+                  }
+                }}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Delete">
+            <span>
+              <IconButton 
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(row.id);
+                }}
+                disabled={row.status === 'Deleted'}
+                color="error"
+                sx={{
+                  '&.Mui-disabled': {
+                    opacity: 0.5,
+                  }
+                }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Box>
+      )
+    }
   ];
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        // Fetch tenant details
-        const tenantResponse = await api.get(`/api/tenants/${tenantId}`);
-        setTenantName(tenantResponse.data.name);
-
-        // Fetch organisations
-        const orgResponse = await api.get("/api/organisations", {
-          params: { tenantId },
-        });
-        setOrganisations(orgResponse.data || []);
-        setError(null);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setError("Failed to fetch data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [tenantId]);
-
-  const handleCreateClick = () => {
-    navigate("/organisations/create", { state: { tenantId } });
-  };
-
-  const handleEditClick = (organisationId) => {
-    navigate(`/organisations/edit/${organisationId}`, {
-      state: { tenantId },
-    });
-  };
-
-  const handleDeleteClick = async (organisationId) => {
+  const fetchOrganisations = async () => {
     try {
-      await api.delete(`/api/organisations/${organisationId}`);
-      setOrganisations((prev) => prev.filter(org => org.id !== organisationId));
-    } catch (error) {
-      console.error('Error deleting organisation:', error);
+      setLoading(true);
+      logger.info(`Fetching organizations for tenant: ${tenant.id}`);
+      
+      const response = await api.get(`/api/tenants/${tenant.id}/organisations`);
+      const allOrganisations = response.data;
+      setOrganisations(allOrganisations);
+      
+      // Initial filtering
+      filterOrganisations(allOrganisations, showActiveOnly);
+      setError(null);
+    } catch (err) {
+      logger.error('Error fetching organisations:', err);
+      setError('Failed to load organisations');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleViewDeletedClick = () => {
-    console.log('Navigating to deleted organisations with tenantId:', tenantId);
-    console.log('Tenant Name:', tenantName);
-    navigate('/organisations/deleted', { 
-      state: { 
-        tenantId, 
-        tenantName 
-      } 
-    });
+  const filterOrganisations = (orgs, activeOnly) => {
+    if (activeOnly) {
+      const filtered = orgs.filter(org => org.status !== 'Deleted');
+      logger.info(`Filtered ${orgs.length} organisations to ${filtered.length} active records`);
+      setFilteredOrganisations(filtered);
+    } else {
+      logger.info('Showing all organisations');
+      setFilteredOrganisations(orgs);
+    }
+  };
+
+  useEffect(() => {
+    if (tenant) {
+      fetchOrganisations();
+    }
+  }, [tenant]);
+
+  // Apply filtering when showActiveOnly changes
+  useEffect(() => {
+    filterOrganisations(organisations, showActiveOnly);
+  }, [showActiveOnly, organisations]);
+
+  const handleCreateClick = () => {
+    navigate('/organisations/create');
+  };
+
+  const handleEdit = (organisationId) => {
+    navigate(`/organisations/${organisationId}/edit`);
+  };
+
+  const handleDelete = async (organisationId) => {
+    try {
+      logger.info(`Deleting organisation ${organisationId}`);
+      await api.delete(`/api/tenants/${tenant.id}/organisations/${organisationId}`);
+      logger.info('Organisation deleted successfully');
+      // Refresh the organisations list
+      fetchOrganisations();
+    } catch (err) {
+      logger.error('Error deleting organisation:', err);
+      setError('Failed to delete organisation');
+    }
+  };
+
+  const handleToggleChange = (event) => {
+    const newValue = event.target.checked;
+    logger.info(`Toggling active-only filter: ${newValue}`);
+    setShowActiveOnly(newValue);
   };
 
   return (
-    <Container className={styles.container}>
-      <PageHeader
-        title={`Organisations - ${tenantName}`}
+    <PageContainer>
+      <PageHeader 
+        title={`Organisations - ${tenant?.name || ''}`}
+        showButton={true}
+        buttonText="Create Organisation"
+        onButtonClick={handleCreateClick}
       />
-
-      <div className={styles.tableWrapper}>
-        {error ? (
-          <div className={styles.error}>{error}</div>
-        ) : loading ? (
-          <div className={styles.loading}>Loading...</div>
-        ) : (
-          <>
-            <Table data={organisations} columns={columns} />
-            
-            <Box className={styles.buttonContainer}>
-              <Button 
-                variant="primary"
-                onClick={handleViewDeletedClick}
-              >
-                View Deleted Organisations
-              </Button>
-              <Button 
-                variant="primary"
-                onClick={handleCreateClick}
-              >
-                Create New Organisation
-              </Button>
-            </Box>
-          </>
-        )}
-      </div>
-    </Container>
+      <ErrorMessage message={error} />
+      <FilterContainer>
+        <ToggleSwitch
+          checked={showActiveOnly}
+          onChange={handleToggleChange}
+          labelOn="Showing Active Records"
+          labelOff="Showing All Records"
+          placement="start"
+          color="primary"
+        />
+      </FilterContainer>
+      {loading ? (
+        <LoadingContainer>Loading...</LoadingContainer>
+      ) : filteredOrganisations.length === 0 ? (
+        <EmptyState>
+          <Typography variant="h6" color="textSecondary">
+            No organisations found
+          </Typography>
+        </EmptyState>
+      ) : (
+        <Table 
+          data={filteredOrganisations}
+          columns={columns}
+        />
+      )}
+    </PageContainer>
   );
 };
 

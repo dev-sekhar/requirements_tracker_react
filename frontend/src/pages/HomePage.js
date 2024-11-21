@@ -3,14 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { 
   Container, 
   Typography, 
-  Paper
+  Paper,
+  Box,
+  useTheme
 } from '@mui/material';
-import CustomButton from '../components/Button';
+import Button from '../components/Button';
 import PageHeader from "../components/PageHeader";
-import styles from './styles/HomePage.module.css';
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
   const tenantId = 1;
 
   const handleOrganisationsClick = () => {
@@ -18,35 +20,74 @@ const HomePage = () => {
   };
 
   return (
-    <Container className={styles.container}>
+    <Container 
+      maxWidth="lg" 
+      sx={{ 
+        py: 3,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
+      }}
+    >
       <PageHeader 
         title="Requirements Tracker"
         showButton={false}
       />
-      <Paper className={styles.paper} elevation={3}>
-        <div className={styles.welcomeBox}>
+      
+      <Paper 
+        elevation={3}
+        sx={{
+          p: 4,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 3,
+          maxWidth: 600,
+          width: '100%',
+          mt: 4,
+          backgroundColor: theme => theme.palette.background.paper,
+          boxShadow: theme => theme.shadows[3]
+        }}
+      >
+        <Box 
+          sx={{
+            textAlign: 'center',
+            mb: 2
+          }}
+        >
           <Typography 
             variant="h6" 
-            className={styles.subtitle}
+            sx={{
+              color: theme => theme.palette.text.secondary,
+              mb: 2
+            }}
           >
             Your central hub for managing requirements and organizations
           </Typography>
-        </div>
+        </Box>
         
         <Typography 
           variant="body1" 
-          className={styles.description}
+          sx={{
+            mb: 3,
+            textAlign: 'center',
+            color: theme => theme.palette.text.primary
+          }}
         >
           Select an option from the menu above to get started, or use the button below to view organizations.
         </Typography>
 
-        <CustomButton 
-          variant="primary"
+        <Button 
+          variant="contained"
           size="large"
           onClick={handleOrganisationsClick}
+          sx={{
+            minWidth: 200,
+            fontWeight: 500
+          }}
         >
           View Organisations
-        </CustomButton>
+        </Button>
       </Paper>
     </Container>
   );

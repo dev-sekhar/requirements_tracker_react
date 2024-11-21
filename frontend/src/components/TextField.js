@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextField as MuiTextField } from '@mui/material';
+import { TextField as MuiTextField, useTheme } from '@mui/material';
 import styles from './styles/TextField.module.css';
 
 const TextField = ({ 
@@ -14,6 +14,8 @@ const TextField = ({
   className = '',
   ...props
 }) => {
+  const theme = useTheme();
+  
   return (
     <MuiTextField
       label={label}
@@ -27,11 +29,19 @@ const TextField = ({
       fullWidth
       variant="outlined"
       className={`${styles.textField} ${className}`}
-      InputLabelProps={{
-        className: styles.label
-      }}
-      InputProps={{
-        className: styles.input
+      sx={{
+        '& .MuiInputBase-input': {
+          color: theme.palette.text.primary,
+        },
+        '& .MuiOutlinedInput-root': {
+          backgroundColor: theme.palette.background.paper,
+          '& fieldset': {
+            borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.23)' : 'rgba(0, 0, 0, 0.23)',
+          },
+        },
+        '& .MuiInputLabel-root': {
+          color: theme.palette.text.secondary,
+        },
       }}
       {...props}
     />

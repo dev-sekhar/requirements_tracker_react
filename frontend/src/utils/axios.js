@@ -1,34 +1,21 @@
 import axios from "axios";
+import { getTenantFromSubdomain } from "./tenant";
+import logger from "./logger";
 
 const api = axios.create({
-  baseURL: "http://localhost:3000",
+  baseURL: process.env.REACT_APP_API_URL,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Request interceptor
-api.interceptors.request.use(
-  config => {
-    console.log('Request:', config.method.toUpperCase(), config.url);
-    return config;
-  },
-  error => {
-    console.error('Request Error:', error);
-    return Promise.reject(error);
+// Add request interceptor for tenant header
+api.interceptors.request.use((config) => {
+  const tenant = localStorage.getItem("tenant");
+  if (tenant) {
+    config.headers["X-Tenant-ID"] = tenant;
   }
-);
-
-// Response interceptor
-api.interceptors.response.use(
-  response => {
-    console.log('Response:', response.status, response.data);
-    return response;
-  },
-  error => {
-    console.error('Response Error:', error.response?.data || error.message);
-    return Promise.reject(error);
-  }
-);
+  return config;
+});
 
 export default api;
